@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Distributed_Echo.PDU;
 
 namespace Distributed_Echo.Threads
 {
@@ -23,20 +24,26 @@ namespace Distributed_Echo.Threads
             UdpClient socket = result.AsyncState as UdpClient;
             IPEndPoint source = new IPEndPoint(0, 0);
             var message = socket.EndReceive(result, ref source);
-            Console.WriteLine($"LOGGER: Got {Encoding.UTF8.GetString(message)} bytes from  {source}");
+
+            var m = new SendPdu().fromBytes(message);
+
+            Console.WriteLine($"LOGGER: Got {m.Method} and message {m.message} from: {source}");
             socket.BeginReceive(OnUdpData, socket);
         }
 
         public void ThreadProc()
         {
-            var run = true;
-
             try
             {
-                UdpClient socket = new UdpClient(_port);
-                IPEndPoint target = new IPEndPoint(IPAddress.Parse(address), targetPort);
+                var socket = new UdpClient(_port);
+                var target = new IPEndPoint(IPAddress.Parse(address), targetPort);
 
-                byte[] message = Encoding.ASCII.GetBytes("START SIG");
+                var knot = new SendPdu.KnotMessage();
+                knot.message = 123;
+                knot.Method = SendPdu.Method.INFO;
+                
+                var message = new SendPdu().getBytes(knot);
+
                 socket.Send(message, message.Length, target);
 
                 while (true)

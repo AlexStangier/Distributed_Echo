@@ -1,9 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Sockets;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using Distributed_Echo.Threads;
 
@@ -48,7 +44,7 @@ namespace Distributed_Echo.Knot
 
         /**
          * Creates a static predefined Network composed of Knots
-         */
+         */ 
         public void BuildNetwork()
         {
             var currPort = _port;
@@ -122,7 +118,7 @@ namespace Distributed_Echo.Knot
             level13Knots[4] = knot35;
 
             //Set neighbours of second Level
-            /*knot11._neighbours[0] = knot12; 
+            knot11._neighbours[0] = knot12; 
             knot11._neighbours[1] = knot2;
             
             knot12._neighbours[0] = knot13;
@@ -156,7 +152,7 @@ namespace Distributed_Echo.Knot
             knot1._neighbours[0] = knot11;
             knot1._neighbours[1] = knot12;
             knot1._neighbours[2] = knot13;
-            knot1._neighbours[3] = knot2;*/
+            knot1._neighbours[3] = knot2;
         }
     }
 }
