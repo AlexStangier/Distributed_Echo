@@ -1,74 +1,101 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using Distributed_Echo.PDU;
 
 namespace Distributed_Echo.Threads
 {
     public class KnotThread
     {
-        public int _port;
-        public String address;
-        private Boolean hasReceived = false;
-        public Knot.Knot[] neighbours;
-        private SendPdu pdu = new SendPdu();
+        public readonly int Port;
+        public readonly String Address;
+        private Boolean _hasReceived;
+        public readonly Knot.Knot[] Neighbours;
+        private short _neighsInformed = 0;
+        private bool _informed = false;
+        private String _upwardKnotIPv4;
+        private int _upwardKnotPort;
 
-        public KnotThread(int port, string address, Knot.Knot[] _neighbours)
+        public KnotThread(int port, string address, Knot.Knot[] neighbours)
         {
-            _port = port;
-            this.address = address;
-            neighbours = _neighbours;
+            Port = port;
+            Address = address;
+            Neighbours = neighbours;
         }
 
         private void OnUdpData(IAsyncResult result)
         {
             UdpClient socket = result.AsyncState as UdpClient;
             IPEndPoint source = new IPEndPoint(0, 0);
-            var message = socket.EndReceive(result, ref source);
+            var message = socket?.EndReceive(result, ref source);
 
             var knotMessage = new SendPdu().fromBytes(message);
-
+            
+            switch (knotMessage.Method)
+            {
+                case SendPdu.Method.START:
+                    break;
+                case SendPdu.Method.INFO:
+                    _informed = true;
+                    _upwardKnotPort = source?.Port ?? 0;
+                    _upwardKnotIPv4 = source?.Address.ToString() ?? "";
+                    break;
+                case SendPdu.Method.ECHO:
+                    break;
+            }
 
             Console.WriteLine(
-                $"KNOT {address}:{_port}: Got Method {knotMessage.Method} and message {knotMessage.message} from  {source}");
-            socket.BeginReceive(OnUdpData, socket);
-            hasReceived = true;
+                $"KNOT {Address}:{Port}: Got Method {knotMessage.Method} and message {knotMessage.message} from  {source}");
+
+            socket?.BeginReceive(OnUdpData, socket);
+            _hasReceived = true;
         }
 
         public void ThreadProc()
         {
             try
             {
-                UdpClient socket = new UdpClient(_port);
-                IPEndPoint target = new IPEndPoint(IPAddress.Parse(address), 55555);
-                
+                UdpClient socket = new UdpClient(Port);
+                IPEndPoint target = new IPEndPoint(IPAddress.Parse(Address), 55555);
+
                 while (true)
                 {
                     socket.BeginReceive(OnUdpData, socket);
-                    if (hasReceived)
+                    if (_hasReceived)
                     {
-                        var toSend = new SendPdu.KnotMessage();
-                        toSend.Method = SendPdu.Method.INFO;
-                        toSend.message = 1337;
-
-                        var c = new SendPdu().getBytes(toSend);
+                        var loggerMessage = new SendPdu.KnotMessage();
+                        loggerMessage.Method = SendPdu.Method.INFO;
+                        loggerMessage.message = 1337;
 
                         //send message to logger
+                        var c = new SendPdu().getBytes(loggerMessage);
                         socket.Send(c, c.Length, target);
 
-                        foreach (var neigh in neighbours)
+                        foreach (var neigh in Neighbours)
                         {
                             if (neigh is not null)
                             {
-                                IPEndPoint currTarget = new IPEndPoint(IPAddress.Parse(address), neigh._port);
-                                //send message to neigbours
-                                if (neigh._port != _port)
-                                    socket.Send(c, c.Length, currTarget);
+                                if (!_informed)
+                                {
+                                    IPEndPoint currTarget = new IPEndPoint(IPAddress.Parse(Address), neigh.Port);
+                                    //send message to neigbours
+                                    if (neigh.Port != Port && neigh.Port != _upwardKnotPort)
+                                    {
+                                        _neighsInformed++;
+
+                                        //send i to all neighs except upwardKnot
+                                        var info = new SendPdu.KnotMessage();
+                                        info.Method = SendPdu.Method.INFO;
+                                        info.message = 0;
+                                        var infoArr = new SendPdu().getBytes(info);
+                                        socket.Send(infoArr, infoArr.Length, currTarget);
+                                        
+                                    }
+                                }
                             }
                         }
 
-                        hasReceived = false;
+                        _hasReceived = false;
                     }
                 }
             }

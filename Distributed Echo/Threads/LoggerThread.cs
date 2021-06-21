@@ -39,8 +39,8 @@ namespace Distributed_Echo.Threads
                 var target = new IPEndPoint(IPAddress.Parse(address), targetPort);
 
                 var knot = new SendPdu.KnotMessage();
-                knot.message = 123;
-                knot.Method = SendPdu.Method.INFO;
+                knot.message = 0;
+                knot.Method = SendPdu.Method.START;
                 
                 var message = new SendPdu().getBytes(knot);
 

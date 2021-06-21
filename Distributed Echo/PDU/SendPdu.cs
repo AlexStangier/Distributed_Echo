@@ -7,19 +7,20 @@ namespace Distributed_Echo.PDU
 {
     public class SendPdu
     {
-        public Method method { get; set; }
-        public int message { get; set; }
+        private Method method { get; set; }
+        private int Message { get; set; }
 
         public enum Method
         {
             INFO,
-            ECHO
+            ECHO,
+            START
         }
 
         public SendPdu(Method method, int message)
         {
             this.method = method;
-            this.message = message;
+            this.Message = message;
         }
 
         public SendPdu()
