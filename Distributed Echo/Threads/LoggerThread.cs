@@ -27,7 +27,7 @@ namespace Distributed_Echo.Threads
 
             var m = new SendPdu().fromBytes(message);
 
-            Console.WriteLine($"LOGGER: Got {m.Method} and message {m.message} from: {source}");
+            Console.WriteLine($"LOGGER: {source}: Got {m.Method} and: '{m.message}'");
             socket.BeginReceive(OnUdpData, socket);
         }
 
@@ -39,8 +39,8 @@ namespace Distributed_Echo.Threads
                 var target = new IPEndPoint(IPAddress.Parse(address), targetPort);
 
                 var knot = new SendPdu.KnotMessage();
-                knot.message = 123;
-                knot.Method = SendPdu.Method.INFO;
+                knot.message = "START from Logger";
+                knot.Method = SendPdu.Method.START;
                 
                 var message = new SendPdu().getBytes(knot);
 

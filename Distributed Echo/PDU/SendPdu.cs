@@ -7,19 +7,21 @@ namespace Distributed_Echo.PDU
 {
     public class SendPdu
     {
-        public Method method { get; set; }
-        public int message { get; set; }
+        private Method method { get; set; }
+        private String Message { get; set; }
 
         public enum Method
         {
             INFO,
-            ECHO
+            ECHO,
+            START,
+            LOG
         }
 
-        public SendPdu(Method method, int message)
+        public SendPdu(Method method, String message)
         {
             this.method = method;
-            this.message = message;
+            this.Message = message;
         }
 
         public SendPdu()
@@ -29,13 +31,14 @@ namespace Distributed_Echo.PDU
         public struct KnotMessage
         {
             public Method Method;
-            public int message;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            public String message;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         public struct LoggerMessage
         {
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)]
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
             public String message;
         }
 

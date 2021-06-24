@@ -7,17 +7,17 @@ namespace Distributed_Echo.Logger
     public class Logger
     {
         private const int LoggerPort = 55555;
-        private const String address = "127.0.0.1";
-        private int targetPort;
+        private const String Address = "127.0.0.1";
+        private int _targetPort;
 
         public Logger(int targetPort)
         {
-            this.targetPort = targetPort;
+            this._targetPort = targetPort;
         }
 
-        public Thread startListening()
+        public Thread StartListening()
         {
-            var lThread = new LoggerThread(LoggerPort, address, targetPort);
+            var lThread = new LoggerThread(LoggerPort, Address, _targetPort);
             return new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;
