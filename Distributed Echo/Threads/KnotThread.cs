@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using Distributed_Echo.PDU;
 
 namespace Distributed_Echo.Threads
@@ -36,6 +37,8 @@ namespace Distributed_Echo.Threads
 
             var knotMessage = new SendPdu().fromBytes(message);
             SendToLog($"Received: {knotMessage.Method}");
+            
+            //Thread.Sleep(new Random().Next(0, 100));
 
             switch (knotMessage.Method)
             {
@@ -49,8 +52,7 @@ namespace Distributed_Echo.Threads
                     InformNeighs();
                     break;
                 case SendPdu.Method.ECHO:
-                    _result += Int32.Parse(knotMessage.message);
-                    if (_initiator) SendToLog($"Calculated Memory Size: {_result}");
+                    _result += int.Parse(knotMessage.message);
                     break;
             }
 
@@ -68,21 +70,19 @@ namespace Distributed_Echo.Threads
                         if (!neigh.Informed)
                         {
                             neigh.Informed = true;
-                            //send message to neigbours
                             if (neigh.Port != Port && neigh.Port != _upwardKnotPort)
                             {
                                 _neighsInformed++;
-                                SendToLog(
-                                    $"Relaying {SendPdu.Method.INFO} to {neigh.Port}.");
+                                SendToLog($"Relaying {SendPdu.Method.INFO} to {neigh.Port}.");
                                 SendToTarget(SendPdu.Method.INFO, neigh.Port, "Relayed INFO message.");
                             }
                         }
-
-                        if (_neighsInformed != Neighbours.Where(x => x != null).ToArray().Length)
+                        
+                        if (_neighsInformed == Neighbours.Where(x => x != null).ToArray().Length)
                         {
                             if (_initiator)
                             {
-                                SendToLog("ECHO terminated.");
+                                SendToLog($"ECHO terminated with value: {_result}");
                             }
                             else
                             {
@@ -117,14 +117,20 @@ namespace Distributed_Echo.Threads
             }
         }
 
-        private void SendToTarget(SendPdu.Method method, int port, String message)
+        /**
+         * Send a specified message to a specified target.
+         */
+        private void SendToTarget(SendPdu.Method method, int port, string message)
         {
             var info = new SendPdu.KnotMessage {Method = method, message = message};
             var infoArr = new SendPdu().getBytes(info);
             _socket.Send(infoArr, infoArr.Length, new IPEndPoint(IPAddress.Parse(Address), port));
         }
 
-        private void SendToLog(String message)
+        /**
+         * Send a specified message to the Logger instance.
+         */
+        private void SendToLog(string message)
         {
             var info = new SendPdu.KnotMessage {Method = SendPdu.Method.LOG, message = message};
             var infoArr = new SendPdu().getBytes(info);
