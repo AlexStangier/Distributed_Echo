@@ -27,7 +27,7 @@ namespace Distributed_Echo.Threads
 
             var m = new SendPdu().fromBytes(message);
 
-            Console.WriteLine($"LOGGER: {source}: Got {m.Method} and: '{m.message}'");
+            Console.WriteLine($"LOGGER: {source}: Got {m.Method} and: '{m.message}' at: {DateTime.Now}");
             socket.BeginReceive(OnUdpData, socket);
         }
 

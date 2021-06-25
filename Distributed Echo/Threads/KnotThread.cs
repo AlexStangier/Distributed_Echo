@@ -9,15 +9,16 @@ namespace Distributed_Echo.Threads
 {
     public class KnotThread
     {
-        public readonly int Port;
-        public readonly String Address;
-        public readonly Knot.Knot[] Neighbours;
+        public int Port;
+        public string Address;
+        public Knot.Knot[] Neighbours;
         private short _neighsInformed = 0;
         private String _upwardKnotIPv4;
         private int _upwardKnotPort;
         private UdpClient _socket;
         private bool _initiator = false;
         private int _result = 0;
+        private bool firstInformed = false;
 
         public KnotThread(int port, string address, Knot.Knot[] neighbours)
         {
@@ -37,25 +38,30 @@ namespace Distributed_Echo.Threads
 
             var knotMessage = new SendPdu().fromBytes(message);
             SendToLog($"Received: {knotMessage.Method}");
-            
+
             //Thread.Sleep(new Random().Next(0, 100));
 
             switch (knotMessage.Method)
             {
                 case SendPdu.Method.START:
                     _initiator = true;
+                    _neighsInformed--;
                     InformNeighs();
                     break;
                 case SendPdu.Method.INFO:
-                    _upwardKnotPort = source?.Port ?? 0;
-                    _upwardKnotIPv4 = source?.Address.ToString() ?? "";
+                    if (!firstInformed)
+                    {
+                        firstInformed = true;
+                        _upwardKnotPort = source?.Port ?? 0;
+                        _upwardKnotIPv4 = source?.Address.ToString() ?? "";
+                    }
                     InformNeighs();
                     break;
                 case SendPdu.Method.ECHO:
                     _result += int.Parse(knotMessage.message);
                     break;
             }
-
+            
             _socket?.BeginReceive(OnUdpData, _socket);
         }
 
@@ -67,17 +73,18 @@ namespace Distributed_Echo.Threads
                 {
                     if (neigh is not null)
                     {
+                        _neighsInformed++;
                         if (!neigh.Informed)
                         {
                             neigh.Informed = true;
+
                             if (neigh.Port != Port && neigh.Port != _upwardKnotPort)
                             {
-                                _neighsInformed++;
                                 SendToLog($"Relaying {SendPdu.Method.INFO} to {neigh.Port}.");
                                 SendToTarget(SendPdu.Method.INFO, neigh.Port, "Relayed INFO message.");
                             }
                         }
-                        
+
                         if (_neighsInformed == Neighbours.Where(x => x != null).ToArray().Length)
                         {
                             if (_initiator)
@@ -86,7 +93,7 @@ namespace Distributed_Echo.Threads
                             }
                             else
                             {
-                                SendToTarget(SendPdu.Method.ECHO, _upwardKnotPort, "1");
+                                SendToTarget(SendPdu.Method.ECHO, _upwardKnotPort, $"{_result}");
                             }
                         }
                     }
