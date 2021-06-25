@@ -19,6 +19,7 @@ namespace Distributed_Echo.Threads
         private bool _initiator = false;
         private int _result = 0;
         private bool firstInformed = false;
+        private bool informed = false;
 
         public KnotThread(int port, string address, Knot.Knot[] neighbours)
         {
@@ -44,6 +45,7 @@ namespace Distributed_Echo.Threads
             switch (knotMessage.Method)
             {
                 case SendPdu.Method.START:
+                    //informed = true;
                     _initiator = true;
                     _neighsInformed--;
                     InformNeighs();
@@ -55,13 +57,14 @@ namespace Distributed_Echo.Threads
                         _upwardKnotPort = source?.Port ?? 0;
                         _upwardKnotIPv4 = source?.Address.ToString() ?? "";
                     }
+
                     InformNeighs();
                     break;
                 case SendPdu.Method.ECHO:
                     _result += int.Parse(knotMessage.message);
                     break;
             }
-            
+
             _socket?.BeginReceive(OnUdpData, _socket);
         }
 
@@ -74,16 +77,14 @@ namespace Distributed_Echo.Threads
                     if (neigh is not null)
                     {
                         _neighsInformed++;
-                        if (!neigh.Informed)
-                        {
-                            neigh.Informed = true;
 
-                            if (neigh.Port != Port && neigh.Port != _upwardKnotPort)
-                            {
-                                SendToLog($"Relaying {SendPdu.Method.INFO} to {neigh.Port}.");
-                                SendToTarget(SendPdu.Method.INFO, neigh.Port, "Relayed INFO message.");
-                            }
+                        if (neigh.Port != Port && neigh.Port != _upwardKnotPort && !informed)
+                        {
+                            informed = true;
+                            SendToLog($"Relaying {SendPdu.Method.INFO} to {neigh.Port}.");
+                            SendToTarget(SendPdu.Method.INFO, neigh.Port, "Relayed INFO message.");
                         }
+
 
                         if (_neighsInformed == Neighbours.Where(x => x != null).ToArray().Length)
                         {
