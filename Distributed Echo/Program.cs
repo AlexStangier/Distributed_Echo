@@ -60,8 +60,6 @@ namespace Distributed_Echo
                     listThreads.Add(currThread);
                     currThread.Start();
                 }
-
-                tLogger.Join();
             }
             catch (Exception e)
             {
