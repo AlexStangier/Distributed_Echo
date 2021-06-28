@@ -39,7 +39,7 @@ namespace Distributed_Echo.Threads
         {
             try
             {
-                IPEndPoint source = new IPEndPoint(IPAddress.Loopback, 0);
+                IPEndPoint source = new IPEndPoint(0, 0);
                 var message = _socket?.EndReceive(result, ref source);
 
                 var knotMessage = new SendPdu().fromBytes(message);
@@ -70,7 +70,7 @@ namespace Distributed_Echo.Threads
                 _upwardKnotPort = source.Port;
                 _upwardKnotIPv4 = source.Address.ToString();
                 SendToLog(
-                    $"Parent: {_upwardKnotPort} IsInitiator:{_initiator.ToString().ToLower()} started Algorithm with memory Size:{_memorySize}");
+                    $"Parent: {_upwardKnotPort} started Algorithm with memory Size: {_memorySize} is Initiator: {_initiator.ToString().ToLower()}");
                 SendToLog($"Amount neighbours: {Neighbours.Length}");
 
 
@@ -80,7 +80,7 @@ namespace Distributed_Echo.Threads
                     {
                         SendToTarget(SendPdu.Method.INFO, neigh.Port, $"{_memorySize}");
                         SendToLog(
-                            $"Sending INFO to {neigh.Port} -> Neighs informed: {_neighsInformed}/{Neighbours.Length}");
+                            $"Sending INFO to {neigh.Port}");
                     }
                 }
             }
@@ -98,7 +98,7 @@ namespace Distributed_Echo.Threads
                 }
             }
 
-            SendToLog($"{Port}: {_neighsInformed}/{Neighbours.Length}");
+            SendToLog($"{Port}: Neighbours informed: {_neighsInformed}/{Neighbours.Length}");
             if (_neighsInformed == Neighbours.Length)
             {
                 if (_initiator)
@@ -140,7 +140,7 @@ namespace Distributed_Echo.Threads
         {
             var info = new SendPdu.KnotMessage {Method = method, message = message};
             var infoArr = new SendPdu().getBytes(info);
-            _socket.Send(infoArr, infoArr.Length, new IPEndPoint(IPAddress.Loopback, port));
+            _socket.Send(infoArr, infoArr.Length, new IPEndPoint(0, port));
         }
 
         /**
@@ -150,7 +150,7 @@ namespace Distributed_Echo.Threads
         {
             var info = new SendPdu.KnotMessage {Method = SendPdu.Method.LOG, message = message};
             var infoArr = new SendPdu().getBytes(info);
-            _socket.Send(infoArr, infoArr.Length, new IPEndPoint(IPAddress.Loopback, 55555));
+            _socket.Send(infoArr, infoArr.Length, new IPEndPoint(0, 55555));
         }
     }
 }

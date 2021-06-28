@@ -28,8 +28,11 @@ namespace Distributed_Echo.Threads
 
             var m = new SendPdu().fromBytes(message);
 
+            if (m.message.StartsWith("ECHO"))
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine($"LOGGER: {source}: '{m.message}'");
-            socket.BeginReceive(new AsyncCallback(OnUdpData), socket);
+            Console.ForegroundColor = ConsoleColor.Black;
+            socket.BeginReceive(OnUdpData, socket);
         }
 
         public void ThreadProc()
@@ -38,19 +41,17 @@ namespace Distributed_Echo.Threads
             {
                 var socket = new UdpClient(_port);
                 var target = new IPEndPoint(IPAddress.Parse(address), targetPort);
-                
-                //Thread.Sleep(5000);
-
                 var knot = new SendPdu.KnotMessage();
+                
                 knot.message = "START from Logger";
                 knot.Method = SendPdu.Method.START;
-                
+
                 var message = new SendPdu().getBytes(knot);
 
                 socket.Send(message, message.Length, target);
-                
-                socket.BeginReceive(new AsyncCallback(OnUdpData), socket);
-                
+
+                socket.BeginReceive(OnUdpData, socket);
+
                 while (true)
                 {
                     Thread.Sleep(100);

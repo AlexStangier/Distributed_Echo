@@ -43,21 +43,25 @@ namespace Distributed_Echo
                         run = false;
                     }
                 }
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 var logger = new Logger.Logger(port);
+                Console.WriteLine("Started Logger Thread at: 55555.");
 
                 var tLogger = logger.StartListening();
                 tLogger.Start();
 
                 var rootKnot = new Knot.Knot(ipv4);
-
-                Console.Clear();
-
+                
                 short i = 0;
                 foreach (var knot in rootKnot.BuildNetwork())
                 {
                     var x = knot.StartListening(knot, ++i);
+                    Console.WriteLine($"Started Knot Thread at port: {knot.Port}.");
                     x.Start();
                 }
+                Console.WriteLine("Setup completed.");
+                Console.Clear();
+                Console.ForegroundColor = ConsoleColor.Black;
 
                 tLogger.Join();
             }
