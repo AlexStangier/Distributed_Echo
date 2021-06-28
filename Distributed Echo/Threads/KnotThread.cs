@@ -10,28 +10,25 @@ namespace Distributed_Echo.Threads
 {
     public class KnotThread
     {
-        public int Port;
-        public string Address;
-        public Knot.Knot[] Neighbours;
+        private int Port;
+        private string Address;
+        private Knot.Knot[] Neighbours;
         private short _neighsInformed = 0;
         private String _upwardKnotIPv4;
         private int _upwardKnotPort;
         private UdpClient _socket;
         private bool _initiator = false;
-        private int _result = 0;
-        private bool informed = false;
+        private bool _informed = false;
         private int _memorySize;
-        private int _amountNeighbours;
 
-        public KnotThread(int port, string address, Knot.Knot[] neighbours, int memorySize = 0)
+        public KnotThread(Knot.Knot knot, int memorySize = 0)
         {
-            Port = port;
-            Address = address;
-            Neighbours = neighbours;
-            _socket = new UdpClient(port);
+            Port = knot.Port;
+            Address = knot.Address;
+            Neighbours = knot.Neighbours;
+            _socket = new UdpClient(knot.Port);
             if (memorySize is 0) new Random().Next();
             _memorySize = memorySize;
-            _amountNeighbours = Neighbours?.Where(x => x != null).ToArray().Length ?? 0;
         }
 
 
@@ -40,21 +37,26 @@ namespace Distributed_Echo.Threads
          */
         private void OnUdpData(IAsyncResult result)
         {
-            IPEndPoint source = new IPEndPoint(0, 0);
-            var message = _socket?.EndReceive(result, ref source);
-
-            var knotMessage = new SendPdu().fromBytes(message);
-            SendToLog($"Received: {knotMessage.Method} from {source.Port}");
-
-            Thread.Sleep(new Random().Next(0, 100));
-
-            if (knotMessage.Method == SendPdu.Method.START)
+            try
             {
-                _initiator = true;
-                //_neighsInformed--;
-            }
+                IPEndPoint source = new IPEndPoint(IPAddress.Loopback, 0);
+                var message = _socket?.EndReceive(result, ref source);
 
-            EchoAlgorithm(knotMessage, source);
+                var knotMessage = new SendPdu().fromBytes(message);
+                SendToLog($"Received: {knotMessage.Method} from {source.Port}");
+
+                if (knotMessage.Method == SendPdu.Method.START)
+                {
+                    _initiator = true;
+                    _neighsInformed--;
+                }
+
+                EchoAlgorithm(knotMessage, source);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
 
             _socket?.BeginReceive(OnUdpData, _socket);
         }
@@ -62,23 +64,23 @@ namespace Distributed_Echo.Threads
         private void EchoAlgorithm(SendPdu.KnotMessage message, IPEndPoint source)
         {
             _neighsInformed++;
-            if (!informed)
+            if (!_informed)
             {
-                informed = true;
+                _informed = true;
                 _upwardKnotPort = source.Port;
                 _upwardKnotIPv4 = source.Address.ToString();
                 SendToLog(
                     $"Parent: {_upwardKnotPort} IsInitiator:{_initiator.ToString().ToLower()} started Algorithm with memory Size:{_memorySize}");
-                SendToLog($"Amount neighbours: {_amountNeighbours}");
+                SendToLog($"Amount neighbours: {Neighbours.Length}");
+
 
                 foreach (var neigh in Neighbours)
                 {
-                    
                     if (neigh.Port != _upwardKnotPort)
                     {
                         SendToTarget(SendPdu.Method.INFO, neigh.Port, $"{_memorySize}");
                         SendToLog(
-                            $"Sending INFO to {neigh.Port} -> Neighs informed: {_neighsInformed}/{_amountNeighbours}");
+                            $"Sending INFO to {neigh.Port} -> Neighs informed: {_neighsInformed}/{Neighbours.Length}");
                     }
                 }
             }
@@ -96,7 +98,8 @@ namespace Distributed_Echo.Threads
                 }
             }
 
-            if (_neighsInformed == _amountNeighbours)
+            SendToLog($"{Port}: {_neighsInformed}/{Neighbours.Length}");
+            if (_neighsInformed == Neighbours.Length)
             {
                 if (_initiator)
                 {
@@ -114,9 +117,10 @@ namespace Distributed_Echo.Threads
         {
             try
             {
+                _socket.BeginReceive(OnUdpData, _socket);
                 while (true)
                 {
-                    _socket.BeginReceive(OnUdpData, _socket);
+                    Thread.Sleep(100);
                 }
             }
             catch (SocketException se)
@@ -136,7 +140,7 @@ namespace Distributed_Echo.Threads
         {
             var info = new SendPdu.KnotMessage {Method = method, message = message};
             var infoArr = new SendPdu().getBytes(info);
-            _socket.Send(infoArr, infoArr.Length, new IPEndPoint(IPAddress.Parse(Address), port));
+            _socket.Send(infoArr, infoArr.Length, new IPEndPoint(IPAddress.Loopback, port));
         }
 
         /**
@@ -146,7 +150,7 @@ namespace Distributed_Echo.Threads
         {
             var info = new SendPdu.KnotMessage {Method = SendPdu.Method.LOG, message = message};
             var infoArr = new SendPdu().getBytes(info);
-            _socket.Send(infoArr, infoArr.Length, new IPEndPoint(IPAddress.Parse(Address), 55555));
+            _socket.Send(infoArr, infoArr.Length, new IPEndPoint(IPAddress.Loopback, 55555));
         }
     }
 }

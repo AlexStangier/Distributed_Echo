@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Distributed_Echo.Threads;
 
 namespace Distributed_Echo
 {
@@ -42,8 +43,6 @@ namespace Distributed_Echo
                         run = false;
                     }
                 }
-
-                var listThreads = new List<Thread>();
                 var logger = new Logger.Logger(port);
 
                 var tLogger = logger.StartListening();
@@ -53,13 +52,14 @@ namespace Distributed_Echo
 
                 Console.Clear();
 
-                rootKnot.BuildNetwork();
-
-                foreach (var currThread in from knot in rootKnot.Knots select knot.StartListening())
+                short i = 0;
+                foreach (var knot in rootKnot.BuildNetwork())
                 {
-                    listThreads.Add(currThread);
-                    currThread.Start();
+                    var x = knot.StartListening(knot, ++i);
+                    x.Start();
                 }
+
+                tLogger.Join();
             }
             catch (Exception e)
             {

@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using Distributed_Echo.PDU;
 
 namespace Distributed_Echo.Threads
@@ -22,13 +23,13 @@ namespace Distributed_Echo.Threads
         private void OnUdpData(IAsyncResult result)
         {
             UdpClient socket = result.AsyncState as UdpClient;
-            IPEndPoint source = new IPEndPoint(0, 0);
+            IPEndPoint source = new IPEndPoint(IPAddress.Loopback, 0);
             var message = socket.EndReceive(result, ref source);
 
             var m = new SendPdu().fromBytes(message);
 
             Console.WriteLine($"LOGGER: {source}: '{m.message}'");
-            socket.BeginReceive(OnUdpData, socket);
+            socket.BeginReceive(new AsyncCallback(OnUdpData), socket);
         }
 
         public void ThreadProc()
@@ -37,6 +38,8 @@ namespace Distributed_Echo.Threads
             {
                 var socket = new UdpClient(_port);
                 var target = new IPEndPoint(IPAddress.Parse(address), targetPort);
+                
+                //Thread.Sleep(5000);
 
                 var knot = new SendPdu.KnotMessage();
                 knot.message = "START from Logger";
@@ -45,10 +48,12 @@ namespace Distributed_Echo.Threads
                 var message = new SendPdu().getBytes(knot);
 
                 socket.Send(message, message.Length, target);
-
+                
+                socket.BeginReceive(new AsyncCallback(OnUdpData), socket);
+                
                 while (true)
                 {
-                    socket.BeginReceive(OnUdpData, socket);
+                    Thread.Sleep(100);
                 }
             }
             catch (SocketException se)
