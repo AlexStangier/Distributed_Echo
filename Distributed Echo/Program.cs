@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using Distributed_Echo.Threads;
 
 namespace Distributed_Echo
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             var run = true;
             var ipv4 = "127.0.0.1";
@@ -43,6 +39,7 @@ namespace Distributed_Echo
                         run = false;
                     }
                 }
+                
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 var logger = new Logger.Logger(port);
                 Console.WriteLine("Started Logger Thread at: 55555.");

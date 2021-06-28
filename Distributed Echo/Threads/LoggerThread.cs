@@ -1,7 +1,6 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using Distributed_Echo.PDU;
 
@@ -24,7 +23,7 @@ namespace Distributed_Echo.Threads
         {
             UdpClient socket = result.AsyncState as UdpClient;
             IPEndPoint source = new IPEndPoint(IPAddress.Loopback, 0);
-            var message = socket.EndReceive(result, ref source);
+            var message = socket?.EndReceive(result, ref source);
 
             var m = new SendPdu().fromBytes(message);
 

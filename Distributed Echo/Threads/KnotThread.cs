@@ -1,10 +1,9 @@
 using System;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using Distributed_Echo.PDU;
-using Microsoft.VisualBasic.CompilerServices;
+
 
 namespace Distributed_Echo.Threads
 {
@@ -45,6 +44,8 @@ namespace Distributed_Echo.Threads
                 var knotMessage = new SendPdu().fromBytes(message);
                 SendToLog($"Received: {knotMessage.Method} from {source.Port}");
 
+                Thread.Sleep(new Random().Next(0, 100));
+
                 if (knotMessage.Method == SendPdu.Method.START)
                 {
                     _initiator = true;
@@ -72,8 +73,7 @@ namespace Distributed_Echo.Threads
                 SendToLog(
                     $"Parent: {_upwardKnotPort} started Algorithm with memory Size: {_memorySize} is Initiator: {_initiator.ToString().ToLower()}");
                 SendToLog($"Amount neighbours: {Neighbours.Length}");
-
-
+                
                 foreach (var neigh in Neighbours)
                 {
                     if (neigh.Port != _upwardKnotPort)
